@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kids Memory Match Game</title>
+    <style>
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #ffecb3; /* Light Yellow Background */
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 3em;
+            margin: 20px 0;
+            color: #e74c3c; /* Red Header Text */
+        }
+
+        #game-board {
+            display: grid;
+            grid-template-columns: repeat(4, 100px);
+            grid-template-rows: repeat(4, 100px);
+            gap: 10px;
+            margin-top: 70px; /* Adjust the margin to create space below the heading */
+            animation: slideDown 1s ease-in-out; /* Animation for bringing the matrix down */
+        }
+
+        .card {
+            width: 100px;
+            height: 100px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2em;
+            background-color: #f8c471; /* Orange Background */
+            border-radius: 10px;
+            cursor: pointer;
+            transform-style: preserve-3d;
+            transition: transform 0.5s ease-in-out;
+        }
+
+        .card:hover {
+            transform: scale(1.05);
+        }
+
+        .card .face {
+            position: absolute;
+            backface-visibility: hidden;
+        }
+
+        .card .front {
+            z-index: 1;
+            color: #3498db; /* Blue Text */
+        }
+
+        .card .back {
+            transform: rotateY(180deg);
+            background-color: #3498db; /* Blue Background */
+            color: #fff; /* White Text */
+        }
+
+        .matched {
+            background-color: #2ecc71; /* Green Background */
+            pointer-events: none;
+            animation: scaleMatched 0.5s ease-in-out;
+        }
+
+        @keyframes scaleMatched {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.1);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        /* Animation to bring the matrix down */
+        @keyframes slideDown {
+            from {
+                transform: translateY(-100%);
+            }
+            to {
+                transform: translateY(0);
+            }
+        }
+
+        /* Pop-up animation for the message */
+        @keyframes popUp {
+            0% {
+                transform: translateY(100%);
+            }
+            80% {
+                transform: translateY(-10%);
+            }
+            100% {
+                transform: translateY(0);
+            }
+        }
+
+        /* Styling for the pop-up message */
+        .popup {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background-color: #2ecc71; /* Green Background */
+            color: #fff; /* White text */
+            text-align: center;
+            padding: 10px;
+            box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
+            animation: popUp 0.8s ease-in-out;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Kids Memory Match Game</h1>
+    <div id="game-board"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const emojis = ['🦄', '🐬', '🍭', '🎈', '🌈', '🚀', '🍦', '🎉'];
+            const allCards = [...emojis, ...emojis]; // Create pairs of emojis
+            let shuffledCards = [];
+            let flippedCards = [];
+            let matchedPairs = 0;
+
+            // Shuffle the cards
+            function shuffleCards() {
+                shuffledCards = allCards.sort(() => Math.random() - 0.5);
+            }
+
+            // Initialize the game board
+            function initializeGame() {
+                const gameBoard = document.getElementById('game-board');
+                gameBoard.innerHTML = '';
+                shuffledCards.forEach((emoji, index) => {
+                    const card = createCard(emoji, index);
+                    gameBoard.appendChild(card);
+                });
+            }
+
+            // Create a card with a given emoji and index
+            function createCard(emoji, index) {
+                const card = document.createElement('div');
+                card.classList.add('card');
+                card.dataset.index = index;
+
+                const frontFace = document.createElement('div');
+                frontFace.classList.add('face', 'front');
+                frontFace.textContent = emoji;
+
+                const backFace = document.createElement('div');
+                backFace.classList.add('face', 'back');
+                backFace.textContent = '🌟'; // Use a star as the back face
+
+                card.appendChild(frontFace);
+                card.appendChild(backFace);
+
+                card.addEventListener('click', flipCard);
+                return card;
+            }
+
+            // Flip the card and check for a match
+            function flipCard(event) {
+                const clickedCard = event.currentTarget;
+
+                if (flippedCards.length < 2 && !flippedCards.includes(clickedCard) && !clickedCard.classList.contains('matched')) {
+                    flippedCards.push(clickedCard);
+                    clickedCard.classList.add('rotate');
+
+                    if (flippedCards.length === 2) {
+                        setTimeout(checkMatch, 800);
+                    }
+                }
+            }
+
+            // Check if the flipped cards form a match
+            function checkMatch() {
+                const [card1, card2] = flippedCards;
+                const index1 = card1.dataset.index;
+                const index2 = card2.dataset.index;
+
+                if (shuffledCards[index1] === shuffledCards[index2]) {
+                    matchedPairs++;
+
+                    if (matchedPairs === emojis.length) {
+                        showPopup('Congratulations! You matched all pairs.');
+                        resetGame();
+                    } else {
+                        card1.classList.add('matched');
+                        card2.classList.add('matched');
+                    }
+                } else {
+                    card1.classList.remove('rotate');
+                    card2.classList.remove('rotate');
+                }
+
+                flippedCards = [];
+            }
+
+            // Reset the game
+            function resetGame() {
+                matchedPairs = 0;
+                shuffledCards = [];
+                flippedCards = [];
+                shuffleCards();
+                initializeGame();
+            }
+
+            // Display a pop-up message
+            function showPopup(message) {
+                const popup = document.createElement('div');
+                popup.classList.add('popup');
+                popup.textContent = message;
+                document.body.appendChild(popup);
+
+                setTimeout(() => {
+                    popup.remove();
+                }, 3000); // Remove the popup after 3 seconds
+            }
+
+            // Initialize the game on page load
+            shuffleCards();
+            initializeGame();
+        });
+    </script>
+</body>
+
+</html>
